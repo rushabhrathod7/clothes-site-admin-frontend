@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/select";
 import { DatePickerWithRange } from "@/components/ui/date-range-picker";
 import { cn } from "@/lib/utils";
+import { useAuthStore } from "@/stores/authStore";
 
 const PaymentsPage = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -38,6 +39,20 @@ const PaymentsPage = () => {
     baseURL: import.meta.env.VITE_API_URL || "http://localhost:5000/api",
     withCredentials: true,
   });
+
+  // Add request interceptor to include auth token
+  api.interceptors.request.use(
+    (config) => {
+      const token = useAuthStore.getState().token;
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
+      return config;
+    },
+    (error) => {
+      return Promise.reject(error);
+    }
+  );
 
   // Fetch payments
   const {

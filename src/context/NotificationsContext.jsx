@@ -57,6 +57,20 @@ export const NotificationsProvider = ({ children }) => {
     },
   });
 
+  // Add request interceptor to include auth token
+  api.interceptors.request.use(
+    (config) => {
+      const token = authStore.token;
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
+      return config;
+    },
+    (error) => {
+      return Promise.reject(error);
+    }
+  );
+
   // Play notification sound
   const playNotificationSound = () => {
     if (!hasUserInteracted) {

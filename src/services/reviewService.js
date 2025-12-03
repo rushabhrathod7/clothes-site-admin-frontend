@@ -1,19 +1,21 @@
-import axios from 'axios';
+import axios from "axios";
+import { useAuthStore } from "@/stores/authStore";
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
 // Create axios instance with base URL
 const api = axios.create({
   baseURL: API_URL,
   headers: {
-    'Content-Type': 'application/json',
+    "Content-Type": "application/json",
   },
+  withCredentials: true,
 });
 
 // Add auth token to requests
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('admin_token');
+    const token = useAuthStore.getState().token;
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -31,21 +33,28 @@ api.interceptors.request.use(
  */
 export const getAllReviews = async (params = {}) => {
   try {
-    const { page = 1, limit = 10, sort = '-createdAt', productId, userId, rating } = params;
-    
+    const {
+      page = 1,
+      limit = 10,
+      sort = "-createdAt",
+      productId,
+      userId,
+      rating,
+    } = params;
+
     const queryParams = new URLSearchParams();
-    queryParams.append('page', page);
-    queryParams.append('limit', limit);
-    queryParams.append('sort', sort);
-    
-    if (productId) queryParams.append('productId', productId);
-    if (userId) queryParams.append('userId', userId);
-    if (rating) queryParams.append('rating', rating);
-    
+    queryParams.append("page", page);
+    queryParams.append("limit", limit);
+    queryParams.append("sort", sort);
+
+    if (productId) queryParams.append("productId", productId);
+    if (userId) queryParams.append("userId", userId);
+    if (rating) queryParams.append("rating", rating);
+
     const response = await api.get(`/admin/reviews?${queryParams.toString()}`);
     return response.data;
   } catch (error) {
-    console.error('Error fetching reviews:', error);
+    console.error("Error fetching reviews:", error);
     throw error.response?.data || error;
   }
 };
@@ -105,12 +114,14 @@ export const deleteReview = async (reviewId) => {
 export const getProductReviews = async (productId, params = {}) => {
   try {
     const { page = 1, limit = 10 } = params;
-    
+
     const queryParams = new URLSearchParams();
-    queryParams.append('page', page);
-    queryParams.append('limit', limit);
-    
-    const response = await api.get(`/admin/reviews/product/${productId}?${queryParams.toString()}`);
+    queryParams.append("page", page);
+    queryParams.append("limit", limit);
+
+    const response = await api.get(
+      `/admin/reviews/product/${productId}?${queryParams.toString()}`
+    );
     return response.data;
   } catch (error) {
     console.error(`Error fetching reviews for product ${productId}:`, error);
@@ -127,12 +138,14 @@ export const getProductReviews = async (productId, params = {}) => {
 export const getUserReviews = async (userId, params = {}) => {
   try {
     const { page = 1, limit = 10 } = params;
-    
+
     const queryParams = new URLSearchParams();
-    queryParams.append('page', page);
-    queryParams.append('limit', limit);
-    
-    const response = await api.get(`/admin/reviews/user/${userId}?${queryParams.toString()}`);
+    queryParams.append("page", page);
+    queryParams.append("limit", limit);
+
+    const response = await api.get(
+      `/admin/reviews/user/${userId}?${queryParams.toString()}`
+    );
     return response.data;
   } catch (error) {
     console.error(`Error fetching reviews for user ${userId}:`, error);
@@ -146,5 +159,5 @@ export default {
   updateReview,
   deleteReview,
   getProductReviews,
-  getUserReviews
+  getUserReviews,
 };

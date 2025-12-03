@@ -1,6 +1,7 @@
 // src/services/api.js
 import axios from "axios";
 import { toast } from "sonner";
+import { useAuthStore } from "@/stores/authStore";
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || "http://localhost:5000/api",
@@ -11,15 +12,11 @@ const api = axios.create({
   withCredentials: true, // Include cookies with every request
 });
 
-// Add a request interceptor to include auth token from cookies
+// Add a request interceptor to include auth token from authStore
 api.interceptors.request.use(
   (config) => {
-    // Get the token from cookies
-    const token = document.cookie
-      .split("; ")
-      .find((row) => row.startsWith("admin_token="))
-      ?.split("=")[1];
-
+    // Get the token from authStore
+    const token = useAuthStore.getState().token;
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }

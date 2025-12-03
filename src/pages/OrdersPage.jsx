@@ -29,12 +29,27 @@ import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
 import { Loader2, Trash2 } from "lucide-react";
 import { ImageIcon } from "lucide-react";
+import { useAuthStore } from "@/stores/authStore";
 
 // Create axios instance with base URL
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || "http://localhost:5000/api",
   withCredentials: true,
 });
+
+// Add request interceptor to include auth token
+api.interceptors.request.use(
+  (config) => {
+    const token = useAuthStore.getState().token;
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
 
 const OrdersPage = () => {
   const [orders, setOrders] = useState([]);
