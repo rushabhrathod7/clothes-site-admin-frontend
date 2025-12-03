@@ -4,7 +4,7 @@ import axios from "axios";
 
 // Configure axios
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || "http://localhost:5000/api/admin",
+  baseURL: import.meta.env.VITE_API_URL || "http://localhost:5000/api",
   withCredentials: true, // Important for cookies to be sent
 });
 
@@ -45,10 +45,10 @@ const useAuthStore = create(
       // Initialize function to check persisted state
       initialize: () => {
         const state = get();
-        console.log('Initializing auth store with persisted state:', {
+        console.log("Initializing auth store with persisted state:", {
           admin: state.admin,
           token: state.token,
-          isAuthenticated: state.isAuthenticated
+          isAuthenticated: state.isAuthenticated,
         });
       },
 
@@ -57,14 +57,14 @@ const useAuthStore = create(
         set({ isLoading: true, error: null });
         try {
           const response = await api.post("/auth/login", { email, password });
-          console.log('Login response:', response.data);
-          
+          console.log("Login response:", response.data);
+
           // Check if we have admin data and token
           if (!response.data.admin || !response.data.token) {
-            console.error('No admin data or token received in login response');
-            throw new Error('Invalid login response');
+            console.error("No admin data or token received in login response");
+            throw new Error("Invalid login response");
           }
-          
+
           // Set the state with what we have
           set({
             admin: response.data.admin,
@@ -72,17 +72,17 @@ const useAuthStore = create(
             isAuthenticated: true,
             isLoading: false,
           });
-          
+
           const newState = get();
-          console.log('Auth state after login:', {
+          console.log("Auth state after login:", {
             admin: newState.admin,
             token: newState.token,
-            isAuthenticated: newState.isAuthenticated
+            isAuthenticated: newState.isAuthenticated,
           });
-          
+
           return response.data;
         } catch (error) {
-          console.error('Login error:', error);
+          console.error("Login error:", error);
           const errorMessage =
             error.response?.data?.message || "Failed to login";
           set({ isLoading: false, error: errorMessage });
@@ -96,10 +96,15 @@ const useAuthStore = create(
         try {
           await api.post("/auth/logout");
         } catch (error) {
-          console.error('Logout error:', error);
+          console.error("Logout error:", error);
         } finally {
-          set({ admin: null, token: null, isAuthenticated: false, isLoading: false });
-          console.log('Auth state after logout:', get());
+          set({
+            admin: null,
+            token: null,
+            isAuthenticated: false,
+            isLoading: false,
+          });
+          console.log("Auth state after logout:", get());
         }
       },
 
@@ -108,45 +113,53 @@ const useAuthStore = create(
         set({ isLoading: true });
         try {
           const response = await api.get("/auth/me");
-          console.log('Profile response:', response.data);
+          console.log("Profile response:", response.data);
           set({
             admin: response.data,
             isAuthenticated: true,
             isLoading: false,
           });
-          console.log('Auth state after profile fetch:', get());
+          console.log("Auth state after profile fetch:", get());
           return response.data;
         } catch (error) {
-          set({ isLoading: false, admin: null, token: null, isAuthenticated: false });
+          set({
+            isLoading: false,
+            admin: null,
+            token: null,
+            isAuthenticated: false,
+          });
           throw new Error("Failed to fetch profile");
         }
       },
-      
+
       // Verify authentication status
       checkAuth: async () => {
-        console.log('Checking auth, current state:', get());
+        console.log("Checking auth, current state:", get());
         if (!get().isAuthenticated || !get().token) {
-          console.log('Not authenticated in state, skipping check');
+          console.log("Not authenticated in state, skipping check");
           return false;
         }
-        
+
         try {
-          const response = await api.get("/auth/check", { 
-            validateStatus: () => true
+          const response = await api.get("/auth/check", {
+            validateStatus: () => true,
           });
-          
+
           const isValid = response.status === 200;
-          console.log('Auth check response:', { status: response.status, isValid });
-          
+          console.log("Auth check response:", {
+            status: response.status,
+            isValid,
+          });
+
           if (!isValid) {
             set({ isAuthenticated: false, admin: null, token: null });
-            console.log('Auth state after invalid check:', get());
+            console.log("Auth state after invalid check:", get());
           }
-          
+
           return isValid;
         } catch (error) {
           set({ isAuthenticated: false, admin: null, token: null });
-          console.log('Auth state after check error:', get());
+          console.log("Auth state after check error:", get());
           return false;
         }
       },
@@ -217,10 +230,10 @@ const useAuthStore = create(
 
 // Log the initial state and initialize
 const initialState = useAuthStore.getState();
-console.log('Initial auth state:', {
+console.log("Initial auth state:", {
   admin: initialState.admin,
   token: initialState.token,
-  isAuthenticated: initialState.isAuthenticated
+  isAuthenticated: initialState.isAuthenticated,
 });
 useAuthStore.getState().initialize();
 

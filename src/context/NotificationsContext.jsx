@@ -1,14 +1,22 @@
-import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import axios from 'axios';
-import { useAuthStore } from '@/stores/authStore';
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useRef,
+} from "react";
+import { useQuery } from "@tanstack/react-query";
+import axios from "axios";
+import { useAuthStore } from "@/stores/authStore";
 
 const NotificationsContext = createContext();
 
 export const useNotifications = () => {
   const context = useContext(NotificationsContext);
   if (!context) {
-    throw new Error('useNotifications must be used within a NotificationsProvider');
+    throw new Error(
+      "useNotifications must be used within a NotificationsProvider"
+    );
   }
   return context;
 };
@@ -18,75 +26,80 @@ export const NotificationsProvider = ({ children }) => {
   const [unreadCount, setUnreadCount] = useState(0);
   const [hasUserInteracted, setHasUserInteracted] = useState(false);
   const authStore = useAuthStore();
-  const notificationSound = useRef(new Audio('/notification.mp3'));
+  const notificationSound = useRef(new Audio("/notification.mp3"));
 
   // Set up user interaction listener
   useEffect(() => {
     const handleUserInteraction = () => {
       setHasUserInteracted(true);
       // Remove listeners after first interaction
-      document.removeEventListener('click', handleUserInteraction);
-      document.removeEventListener('keydown', handleUserInteraction);
+      document.removeEventListener("click", handleUserInteraction);
+      document.removeEventListener("keydown", handleUserInteraction);
     };
 
-    document.addEventListener('click', handleUserInteraction);
-    document.addEventListener('keydown', handleUserInteraction);
+    document.addEventListener("click", handleUserInteraction);
+    document.addEventListener("keydown", handleUserInteraction);
 
     return () => {
-      document.removeEventListener('click', handleUserInteraction);
-      document.removeEventListener('keydown', handleUserInteraction);
+      document.removeEventListener("click", handleUserInteraction);
+      document.removeEventListener("keydown", handleUserInteraction);
     };
   }, []);
 
-  console.log('NotificationsProvider render - full auth state:', authStore);
+  console.log("NotificationsProvider render - full auth state:", authStore);
 
   // Create axios instance with auth header
   const api = axios.create({
-    baseURL: 'http://localhost:5000/api',
+    baseURL: import.meta.env.VITE_API_URL || "http://localhost:5000/api",
     withCredentials: true,
     headers: {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
     },
   });
 
   // Play notification sound
   const playNotificationSound = () => {
     if (!hasUserInteracted) {
-      console.log('Skipping notification sound - no user interaction yet');
+      console.log("Skipping notification sound - no user interaction yet");
       return;
     }
 
     try {
       notificationSound.current.currentTime = 0;
-      notificationSound.current.play().catch(error => {
-        console.error('Error playing notification sound:', error);
+      notificationSound.current.play().catch((error) => {
+        console.error("Error playing notification sound:", error);
       });
     } catch (error) {
-      console.error('Error with notification sound:', error);
+      console.error("Error with notification sound:", error);
     }
   };
 
   // Fetch notifications from the backend
-  const { data: fetchedNotifications, refetch, error, isLoading } = useQuery({
-    queryKey: ['notifications', authStore.isAuthenticated],
+  const {
+    data: fetchedNotifications,
+    refetch,
+    error,
+    isLoading,
+  } = useQuery({
+    queryKey: ["notifications", authStore.isAuthenticated],
     queryFn: async () => {
       try {
-        console.log('Fetching notifications from API...');
-        const response = await api.get('/admin/notifications');
-        console.log('API Response:', response.data);
-        
+        console.log("Fetching notifications from API...");
+        const response = await api.get("/admin/notifications");
+        console.log("API Response:", response.data);
+
         // Ensure we're returning an array
         if (!Array.isArray(response.data)) {
-          console.error('API response is not an array:', response.data);
+          console.error("API response is not an array:", response.data);
           return [];
         }
-        
+
         return response.data;
       } catch (error) {
-        console.error('Error fetching notifications:', error);
+        console.error("Error fetching notifications:", error);
         if (error.response) {
-          console.error('Error response:', error.response.data);
-          console.error('Error status:', error.response.status);
+          console.error("Error response:", error.response.data);
+          console.error("Error status:", error.response.status);
         }
         return [];
       }
@@ -99,27 +112,27 @@ export const NotificationsProvider = ({ children }) => {
 
   // Update notifications when fetched data changes
   useEffect(() => {
-    console.log('Fetched notifications changed:', fetchedNotifications);
-    console.log('Is loading:', isLoading);
-    console.log('Error:', error);
-    console.log('Current auth state:', authStore);
-    
+    console.log("Fetched notifications changed:", fetchedNotifications);
+    console.log("Is loading:", isLoading);
+    console.log("Error:", error);
+    console.log("Current auth state:", authStore);
+
     if (fetchedNotifications && Array.isArray(fetchedNotifications)) {
       // Check if there are new unread notifications
       const previousUnreadCount = unreadCount;
-      const newUnreadCount = fetchedNotifications.filter(n => !n.read).length;
-      
+      const newUnreadCount = fetchedNotifications.filter((n) => !n.read).length;
+
       // Play sound if there are new unread notifications
       if (newUnreadCount > previousUnreadCount) {
         playNotificationSound();
       }
 
-      console.log('Setting notifications:', fetchedNotifications);
+      console.log("Setting notifications:", fetchedNotifications);
       setNotifications(fetchedNotifications);
-      console.log('Unread count:', newUnreadCount);
+      console.log("Unread count:", newUnreadCount);
       setUnreadCount(newUnreadCount);
     } else {
-      console.log('Invalid notifications data, setting empty arrays');
+      console.log("Invalid notifications data, setting empty arrays");
       setNotifications([]);
       setUnreadCount(0);
     }
@@ -128,37 +141,33 @@ export const NotificationsProvider = ({ children }) => {
   // Log any query errors
   useEffect(() => {
     if (error) {
-      console.error('Query error:', error);
+      console.error("Query error:", error);
     }
   }, [error]);
 
   // Mark notification as read
   const markAsRead = async (notificationId) => {
     try {
-      console.log('Marking notification as read:', notificationId);
+      console.log("Marking notification as read:", notificationId);
       await api.patch(`/admin/notifications/${notificationId}/read`);
-      setNotifications(prev =>
-        prev.map(n =>
-          n._id === notificationId ? { ...n, read: true } : n
-        )
+      setNotifications((prev) =>
+        prev.map((n) => (n._id === notificationId ? { ...n, read: true } : n))
       );
-      setUnreadCount(prev => Math.max(0, prev - 1));
+      setUnreadCount((prev) => Math.max(0, prev - 1));
     } catch (error) {
-      console.error('Error marking notification as read:', error);
+      console.error("Error marking notification as read:", error);
     }
   };
 
   // Mark all notifications as read
   const markAllAsRead = async () => {
     try {
-      console.log('Marking all notifications as read');
-      await api.patch('/admin/notifications/read-all');
-      setNotifications(prev =>
-        prev.map(n => ({ ...n, read: true }))
-      );
+      console.log("Marking all notifications as read");
+      await api.patch("/admin/notifications/read-all");
+      setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
       setUnreadCount(0);
     } catch (error) {
-      console.error('Error marking all notifications as read:', error);
+      console.error("Error marking all notifications as read:", error);
     }
   };
 
@@ -168,14 +177,14 @@ export const NotificationsProvider = ({ children }) => {
     markAsRead,
     markAllAsRead,
     refetchNotifications: refetch,
-    isLoading
+    isLoading,
   };
 
-  console.log('NotificationsContext value:', value);
+  console.log("NotificationsContext value:", value);
 
   return (
     <NotificationsContext.Provider value={value}>
       {children}
     </NotificationsContext.Provider>
   );
-}; 
+};

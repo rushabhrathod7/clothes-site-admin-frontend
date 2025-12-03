@@ -3,12 +3,12 @@ import axios from "axios";
 import { toast } from "sonner";
 
 const api = axios.create({
-  baseURL: "http://localhost:5000/api",
+  baseURL: import.meta.env.VITE_API_URL || "http://localhost:5000/api",
   timeout: 10000,
   headers: {
     "Content-Type": "application/json",
   },
-  withCredentials: true // Include cookies with every request
+  withCredentials: true, // Include cookies with every request
 });
 
 // Add a request interceptor to include auth token from cookies
@@ -16,9 +16,9 @@ api.interceptors.request.use(
   (config) => {
     // Get the token from cookies
     const token = document.cookie
-      .split('; ')
-      .find(row => row.startsWith('admin_token='))
-      ?.split('=')[1];
+      .split("; ")
+      .find((row) => row.startsWith("admin_token="))
+      ?.split("=")[1];
 
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
@@ -43,7 +43,12 @@ api.interceptors.response.use(
   }
 );
 
-export const fetchProducts = async (page = 1, limit = 10, sort = "-createdAt", search = "") => {
+export const fetchProducts = async (
+  page = 1,
+  limit = 10,
+  sort = "-createdAt",
+  search = ""
+) => {
   try {
     const response = await api.get("/products", {
       params: {
@@ -53,17 +58,15 @@ export const fetchProducts = async (page = 1, limit = 10, sort = "-createdAt", s
         search,
       },
     });
-    
+
     if (!response.data.success || !Array.isArray(response.data.data)) {
-      throw new Error('Invalid response format from server');
+      throw new Error("Invalid response format from server");
     }
-    
+
     return response.data;
   } catch (err) {
     const errorMessage =
-      err.response?.data?.message ||
-      err.message ||
-      "Failed to fetch products";
+      err.response?.data?.message || err.message || "Failed to fetch products";
     toast.error("Error", {
       description: errorMessage,
     });
@@ -107,13 +110,13 @@ export const addProduct = async (productData) => {
   try {
     // Check if productData is FormData
     const isFormData = productData instanceof FormData;
-    
+
     const response = await api.post("/products", productData, {
-      headers: isFormData 
-        ? { "Content-Type": "multipart/form-data" } 
-        : { "Content-Type": "application/json" }
+      headers: isFormData
+        ? { "Content-Type": "multipart/form-data" }
+        : { "Content-Type": "application/json" },
     });
-    
+
     toast.success("Product Added", {
       description: "Product added successfully",
     });
@@ -132,13 +135,13 @@ export const updateProduct = async (productId, productData) => {
   try {
     // Check if productData is FormData
     const isFormData = productData instanceof FormData;
-    
+
     const response = await api.put(`/products/${productId}`, productData, {
-      headers: isFormData 
-        ? { "Content-Type": "multipart/form-data" } 
-        : { "Content-Type": "application/json" }
+      headers: isFormData
+        ? { "Content-Type": "multipart/form-data" }
+        : { "Content-Type": "application/json" },
     });
-    
+
     toast.success("Product Updated", {
       description: "Product updated successfully",
     });
@@ -172,16 +175,16 @@ export const deleteProduct = async (productId) => {
 export const uploadProductImage = async (productId, imageFile) => {
   try {
     const formData = new FormData();
-    formData.append('images', imageFile);
-    
+    formData.append("images", imageFile);
+
     const response = await api.post(`/products/${productId}/images`, formData, {
-      headers: { "Content-Type": "multipart/form-data" }
+      headers: { "Content-Type": "multipart/form-data" },
     });
-    
+
     toast.success("Image Uploaded", {
       description: "Image uploaded successfully",
     });
-    
+
     return response.data;
   } catch (err) {
     const errorMessage =
@@ -196,7 +199,7 @@ export const uploadProductImage = async (productId, imageFile) => {
 export const deleteProductImage = async (productId, imageId) => {
   try {
     await api.delete(`/products/${productId}/images/${imageId}`);
-    
+
     toast.success("Image Deleted", {
       description: "Image deleted successfully",
     });
